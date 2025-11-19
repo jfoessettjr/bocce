@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">Add Match Result</h5>
+      </div>
+      <div class="card-body">
+        <form method="post" class="row g-3">
+
+          <div class="col-12 col-md-4">
+            <label for="week" class="form-label">Week</label>
+            <input type="number" class="form-control" id="week" name="week" required>
+          </div>
+
+          <div class="col-12 col-md-4">
+            <label for="match_date" class="form-label">Date</label>
+            <input type="date" class="form-control" id="match_date" name="match_date" required>
+          </div>
+
+          <div class="col-12 col-md-4">
+            <label for="match_time" class="form-label">Time</label>
+            <input type="text" class="form-control" id="match_time"
+                   name="match_time" placeholder="7:00 PM">
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="court" class="form-label">Court</label>
+            <input type="text" class="form-control" id="court" name="court"
+                   placeholder="Court 1, North Side, etc.">
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label class="form-label">Week Info</label>
+            <p class="form-text mb-0">
+              Week number lets you group standings and match schedules.
+            </p>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="home_team" class="form-label">Home Team</label>
+            <input list="team-list" class="form-control" id="home_team"
+                   name="home_team" required>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="away_team" class="form-label">Away Team</label>
+            <input list="team-list" class="form-control" id="away_team"
+                   name="away_team" required>
+          </div>
+
+          <datalist id="team-list">
+            {% for t in teams %}
+              <option value="{{ t.name }}">
+            {% endfor %}
+          </datalist>
+
+          <div class="col-6 col-md-3">
+            <label for="home_score" class="form-label">Home Score</label>
+            <input type="number" class="form-control" id="home_score"
+                   name="home_score" min="0">
+          </div>
+
+          <div class="col-6 col-md-3">
+            <label for="away_score" class="form-label">Away Score</label>
+            <input type="number" class="form-control" id="away_score"
+                   name="away_score" min="0">
+          </div>
+
+          <div class="col-12">
+            <p class="form-text">
+              You can leave scores blank if the match hasn’t been played yet –
+              it will show as “TBD” on the schedule.
+            </p>
+          </div>
+
+          <div class="col-12 d-flex justify-content-between">
+            <a href="{{ url_for('standings') }}" class="btn btn-outline-secondary">
+              Cancel
+            </a>
+            <button type="submit" class="btn btn-primary">
+              Save Match
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+

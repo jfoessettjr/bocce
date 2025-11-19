@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="row mb-3">
+  <div class="col-md-8">
+    <h2 class="mb-0">{{ team.name }}</h2>
+    <p class="league-badge text-muted mt-1">Team Profile · Games Record</p>
+  </div>
+
+  <div class="col-md-4 text-md-end mt-3 mt-md-0">
+    <div class="mb-1">
+      <span class="text-muted me-1">Games Record:</span>
+      <span class="badge bg-secondary fs-6">
+        {{ wins }} – {{ losses }}
+      </span>
+    </div>
+    <div class="text-muted small mb-2">
+      Total games played: <strong>{{ games_played }}</strong>
+    </div>
+
+    <a href="{{ url_for('standings') }}" class="btn btn-outline-secondary btn-sm">
+      ← Back to Standings
+    </a>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header">
+    <strong>Schedule & Results</strong>
+  </div>
+
+  <div class="card-body p-0">
+
+    {# ===== Desktop / Tablet view: full table (md and up) ===== #}
+    <div class="d-none d-md-block">
+      <div class="table-responsive">
+        <table class="table table-striped mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th scope="col">Week</th>
+              <th scope="col">Date</th>
+              <th scope="col">Time</th>
+              <th scope="col">Court</th>
+              <th scope="col">Opponent</th>
+              <th scope="col" class="text-center">Home/Away</th>
+              <th scope="col" class="text-center">Result</th>
+              <th scope="col" class="text-center">Series (Games)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if matches %}
+              {% for m in matches %}
+                {% set is_home = (m.home_team_id == team.id) %}
+                {% set opponent = m.away_team if is_home else m.home_team %}
+                {% set has_score = (m.home_score is not none and m.away_score is not none) %}
+
+                {# Determine W/L/T badge #}
+                {% if has_score %}
+                  {% if m.home_score == m.away_score %}
+                    {% set result_label = "T" %}
+                    {% set result_text = "Tie" %}
+                    {% set result_class = "bg-secondary" %}
+                  {% else %}
+                    {% set team_won = (m.home_score > m.away_score and is_home) or
+                                      (m.away_score > m.home_score and not is_home) %}
+                    {% if team_won %}
+                      {% set result_label = "W" %}
+                      {% set result_text = "Win" %}
+                      {% set result_class = "bg-success" %}
+                    {% else %}
+                      {% set result_label = "L" %}
+                      {% set result_text = "Loss" %}
+                      {% set result_class = "bg-danger" %}
+                    {% endif %}
+                  {% endif %}
+                {% endif %}
+
+                <tr>
+                  <td>{{ m.week }}</td>
+                  <td>{{ m.match_date or "" }}</td>
+                  <td>{{ m.match_time or "-" }}</td>
+                  <td>{{ m.court or "-" }}</td>
+
+                  <td class="fw-semibold">{{ opponent.name }}</td>
+
+                  <td class="text-center">
+                    <span class="badge bg-light text-dark">
+                      {{ "Home" if is_home else "Away" }}
+                    </span>
+                  </td>
+
+                  <td class="text-center">
+                    {% if has_score %}
+                      <span class="badge {{ result_class }}" title="{{ result_text }}">
+                        {{ result_label }}
+                      </span>
+                    {% else %}
+                      <span class="badge bg-secondary">TBD</span>
+                    {% endif %}
+                  </td>
+
+                  <td class="text-center">
+                    {% if has_score %}
+                      {{ m.home_score }} – {{ m.away_score }}
+                    {% else %}
+                      —
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="8" class="text-center py-4 text-muted">
+                  No games scheduled for this team yet.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {# ===== Mobile view: stacked cards (sm and down) ===== #}
+    <div class="d-md-none">
+      {% if matches %}
+        {% for m in matches %}
+          {% set is_home = (m.home_team_id == team.id) %}
+          {% set opponent = m.away_team if is_home else m.home_team %}
+          {% set has_score = (m.home_score is not none and m.away_score is not none) %}
+
+          {% if has_score %}
+            {% if m.home_score == m.away_score %}
+              {% set result_label = "T" %}
+              {% set result_text = "Tie" %}
+              {% set result_class = "bg-secondary" %}
+            {% else %}
+              {% set team_won = (m.home_score > m.away_score and is_home) or
+                                (m.away_score > m.home_score and not is_home) %}
+              {% if team_won %}
+                {% set result_label = "W" %}
+                {% set result_text = "Win" %}
+                {% set result_class = "bg-success" %}
+              {% else %}
+                {% set result_label = "L" %}
+                {% set result_text = "Loss" %}
+                {% set result_class = "bg-danger" %}
+              {% endif %}
+            {% endif %}
+          {% endif %}
+
+          <div class="border-bottom px-3 py-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <div>
+                <span class="badge bg-dark me-2">Week {{ m.week }}</span>
+                <small class="text-muted">
+                  {{ m.match_date or "" }}{% if m.match_time %} · {{ m.match_time }}{% endif %}
+                </small>
+              </div>
+              <div>
+                {% if has_score %}
+                  <span class="badge {{ result_class }} me-1">
+                    {{ result_label }}
+                  </span>
+                  <span class="badge bg-primary">
+                    {{ m.home_score }} – {{ m.away_score }}
+                  </span>
+                {% else %}
+                  <span class="badge bg-secondary">TBD</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between">
+              <div>
+                <div class="fw-semibold">{{ opponent.name }}</div>
+                <div class="text-muted small">
+                  Opponent ·
+                  <span class="text-uppercase">
+                    {{ "Home" if is_home else "Away" }}
+                  </span>
+                </div>
+              </div>
+              <div class="text-end text-muted small">
+                {% if m.court %}
+                  <div>Court: <strong>{{ m.court }}</strong></div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="p-3 text-center text-muted">
+          No games scheduled for this team yet.
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+

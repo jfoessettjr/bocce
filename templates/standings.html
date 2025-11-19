@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="row mb-4">
+  <div class="col-md-8">
+    <h2 class="mb-0">League Standings</h2>
+    <p class="league-badge text-muted mt-1">Regular Season · Games</p>
+  </div>
+  {% if max_week > 0 %}
+  <div class="col-md-4 text-md-end mt-3 mt-md-0">
+    <span class="text-muted me-2">Latest week:</span>
+    <span class="badge bg-primary fs-6">{{ max_week }}</span>
+    <a class="btn btn-outline-primary btn-sm ms-2"
+       href="{{ url_for('week_matches', week=max_week) }}">
+      View Week {{ max_week }} Matches
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <thead class="table-dark">
+          <tr>
+            <th scope="col" style="width: 50px;">#</th>
+            <th scope="col">Team</th>
+            <th scope="col" class="text-center">GP</th>
+            <th scope="col" class="text-center">W (Games)</th>
+            <th scope="col" class="text-center">L (Games)</th>
+            <th scope="col" class="text-center">Win %</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if standings %}
+            {% for row in standings %}
+            <tr>
+              <th scope="row">{{ loop.index }}</th>
+              <td class="fw-semibold">
+                <a href="{{ url_for('team_detail', team_id=row.team.id) }}"
+                   class="link-dark text-decoration-none">
+                  {{ row.team.name }}
+                </a>
+              </td>
+              <td class="text-center">{{ row.games_played }}</td>
+              <td class="text-center text-success fw-semibold">{{ row.games_won }}</td>
+              <td class="text-center text-danger">{{ row.games_lost }}</td>
+              <td class="text-center">
+                <span class="badge bg-secondary">
+                  {{ (row.win_pct * 100) | round(1) }}%
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="6" class="text-center py-4 text-muted">
+                No teams yet. Use <strong>Add Match</strong> to enter your first series.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

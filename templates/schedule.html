@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h2 class="mb-0">Full League Schedule</h2>
+    <p class="league-badge text-muted mt-1">All Weeks · All Courts</p>
+  </div>
+  <a href="{{ url_for('standings') }}" class="btn btn-outline-secondary">
+    ← Back to Standings
+  </a>
+</div>
+
+{% if weeks %}
+  {% for week, matches in weeks %}
+    <div class="card shadow-sm mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <strong>Week {{ week }}</strong>
+        </div>
+        <a href="{{ url_for('week_matches', week=week) }}" class="btn btn-sm btn-outline-light">
+          View Week {{ week }} Details
+        </a>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-striped mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th scope="col">Date</th>
+                <th scope="col">Time</th>
+                <th scope="col">Court</th>
+                <th scope="col">Home</th>
+                <th scope="col">Away</th>
+                <th scope="col" class="text-center">Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for m in matches %}
+              <tr>
+                <td>{{ m.match_date or "" }}</td> 
+                <td>{{ m.match_time or "-" }}</td>
+                <td>{{ m.court or "-" }}</td>
+                <td class="fw-semibold">{{ m.home_team.name }}</td>
+                <td class="fw-semibold">{{ m.away_team.name }}</td>
+                <td class="text-center">
+                  {% if m.home_score is not none and m.away_score is not none %}
+                    <span class="badge bg-primary">
+                      {{ m.home_score }} – {{ m.away_score }}
+                    </span>
+                  {% else %}
+                    <span class="badge bg-secondary">TBD</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+{% else %}
+  <div class="alert alert-info">
+    No matches scheduled yet. Use <strong>Add Match</strong> to create your first games.
+  </div>
+{% endif %}
+
+{% endblock %}

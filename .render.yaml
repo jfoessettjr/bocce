@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: bocce-league
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: DATABASE_URL
+        sync: false   # Set this in the Render dashboard later
+    autoDeploy: true
