@@ -18,7 +18,7 @@
   {% endif %}
 </div>
 
-<div class="card shadow-sm">
+<div class="card shadow-sm mb-4">
   <div class="card-body p-0">
     <div class="table-responsive">
       <table class="table table-hover mb-0 align-middle">
@@ -38,7 +38,8 @@
             <tr>
               <th scope="row">{{ loop.index }}</th>
               <td class="fw-semibold">
-                <a href="{{ url_for('team_detail', team_id=row.team.id) }}"
+                {# Clicking a team focuses that team below #}
+                <a href="{{ url_for('standings', team_id=row.team.id) }}"
                    class="link-dark text-decoration-none">
                   {{ row.team.name }}
                 </a>
@@ -57,13 +58,3 @@
             <tr>
               <td colspan="6" class="text-center py-4 text-muted">
                 No teams yet. Use <strong>Add Match</strong> to enter your first series.
-              </td>
-            </tr>
-          {% endif %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-{% endblock %}

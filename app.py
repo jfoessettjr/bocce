@@ -178,15 +178,71 @@ def index():
 def standings():
     session = SessionLocal()
     try:
+        # League-wide standings (games-based)
         standings_data = compute_standings(session)
         max_week = get_latest_week(session)
+
+        # All teams for the dropdown
+        all_teams = session.query(Team).order_by(Team.name.asc()).all()
+
+        # Selected team (via query parameter ?team_id=)
+        team_id = request.args.get("team_id", type=int)
+        selected_team = None
+        selected_matches = []
+        team_record = None
+
+        if team_id:
+            selected_team = session.get(Team, team_id)
+            if selected_team:
+                # All matches for this team
+                matches = (
+                    session.query(Match)
+                    .filter(
+                        (Match.home_team_id == team_id) |
+                        (Match.away_team_id == team_id)
+                    )
+                    .order_by(Match.week, Match.match_date, Match.match_time)
+                    .all()
+                )
+                selected_matches = matches
+
+                # Compute overall games record for this team
+                games_won = 0
+                games_lost = 0
+
+                for m in matches:
+                    if m.home_score is None or m.away_score is None:
+                        continue
+
+                    if m.home_team_id == team_id:
+                        games_won += m.home_score or 0
+                        games_lost += m.away_score or 0
+                    else:
+                        games_won += m.away_score or 0
+                        games_lost += m.home_score or 0
+
+                games_played = games_won + games_lost
+                win_pct = (games_won / games_played) if games_played > 0 else 0
+
+                team_record = {
+                    "games_won": games_won,
+                    "games_lost": games_lost,
+                    "games_played": games_played,
+                    "win_pct": win_pct,
+                }
+
         return render_template(
             "standings.html",
             standings=standings_data,
-            max_week=max_week
+            max_week=max_week,
+            teams=all_teams,
+            selected_team=selected_team,
+            selected_matches=selected_matches,
+            team_record=team_record,
         )
     finally:
         session.close()
+
 
 
 @app.route("/matches/week/<int:week>")
