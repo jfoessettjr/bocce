@@ -1,7 +1,16 @@
 import os
 from datetime import date
 
-from flask import Flask, render_template, request, redirect, url_for, abort
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    abort,
+    session,
+    flash,
+)
 from sqlalchemy import (
     create_engine,
     Column,
@@ -13,8 +22,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker, scoped_session
 from dotenv import load_dotenv
+from functools import wraps
 
-# Load environment variables from .env if present
+
 load_dotenv()
 
 # If DATABASE_URL is not set, default to local SQLite (useful for quick testing)
@@ -33,6 +43,13 @@ SessionLocal = scoped_session(
 Base = declarative_base()
 
 app = Flask(__name__)
+
+# Secret key for sessions / flashes
+app.secret_key = os.getenv("SECRET_KEY", "dev-secret-change-me")
+
+# Simple admin password (from env)
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "bocceadmin")
+
 
 
 # -----------------------
@@ -164,10 +181,43 @@ def get_latest_week(session):
     latest_week = session.query(Match.week).order_by(Match.week.desc()).first()
     return latest_week[0] if latest_week else 0
 
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("is_admin"):
+            # 'next' is where to return after login
+            return redirect(url_for("admin_login", next=request.path))
+        return f(*args, **kwargs)
+    return decorated_function
+
 
 # -----------------------
 # Routes
 # -----------------------
+
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    next_url = request.args.get("next") or url_for("standings")
+
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        if password == ADMIN_PASSWORD:
+            session["is_admin"] = True
+            flash("Admin login successful.", "success")
+            # If form includes a hidden 'next', respect that
+            next_url = request.form.get("next") or next_url
+            return redirect(next_url)
+        else:
+            flash("Invalid admin password.", "danger")
+
+    return render_template("admin_login.html", next_url=next_url)
+
+
+@app.route("/admin/logout")
+def admin_logout():
+    session.pop("is_admin", None)
+    flash("Logged out of admin.", "info")
+    return redirect(url_for("standings"))
 
 @app.route("/")
 def index():
@@ -333,6 +383,7 @@ def schedule():
 
 
 @app.route("/match/new", methods=["GET", "POST"])
+@admin_required
 def add_match():
     session = SessionLocal()
 
@@ -382,6 +433,7 @@ def add_match():
         session.close()
 
 @app.route("/match/<int:match_id>/edit", methods=["GET", "POST"])
+@admin_required
 def edit_match(match_id):
     session = SessionLocal()
     try:
