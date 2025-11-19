@@ -2,59 +2,201 @@
 {% block content %}
 
 <div class="row mb-4">
-  <div class="col-md-8">
-    <h2 class="mb-0">League Standings</h2>
-    <p class="league-badge text-muted mt-1">Regular Season · Games</p>
+  <div class="col-12">
+    <h2 class="mb-0">Team Schedule &amp; Results</h2>
+    <p class="league-badge text-muted mt-1">
+      Select a team to view and update its games and overall record
+    </p>
   </div>
-  {% if max_week > 0 %}
-  <div class="col-md-4 text-md-end mt-3 mt-md-0">
-    <span class="text-muted me-2">Latest week:</span>
-    <span class="badge bg-primary fs-6">{{ max_week }}</span>
-    <a class="btn btn-outline-primary btn-sm ms-2"
-       href="{{ url_for('week_matches', week=max_week) }}">
-      View Week {{ max_week }} Matches
-    </a>
-  </div>
-  {% endif %}
 </div>
 
-<div class="card shadow-sm mb-4">
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table table-hover mb-0 align-middle">
-        <thead class="table-dark">
-          <tr>
-            <th scope="col" style="width: 50px;">#</th>
-            <th scope="col">Team</th>
-            <th scope="col" class="text-center">GP</th>
-            <th scope="col" class="text-center">W (Games)</th>
-            <th scope="col" class="text-center">L (Games)</th>
-            <th scope="col" class="text-center">Win %</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% if standings %}
-            {% for row in standings %}
-            <tr>
-              <th scope="row">{{ loop.index }}</th>
-              <td class="fw-semibold">
-                {# Clicking a team focuses that team below #}
-                <a href="{{ url_for('standings', team_id=row.team.id) }}"
-                   class="link-dark text-decoration-none">
-                  {{ row.team.name }}
-                </a>
-              </td>
-              <td class="text-center">{{ row.games_played }}</td>
-              <td class="text-center text-success fw-semibold">{{ row.games_won }}</td>
-              <td class="text-center text-danger">{{ row.games_lost }}</td>
-              <td class="text-center">
-                <span class="badge bg-secondary">
-                  {{ (row.win_pct * 100) | round(1) }}%
-                </span>
-              </td>
-            </tr>
+<div class="row align-items-start">
+  <!-- Left: Team selector + record -->
+  <div class="col-lg-4 mb-3">
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <strong>Select Team</strong>
+      </div>
+      <div class="card-body">
+        <form method="get" action="{{ url_for('standings') }}">
+          <div class="mb-3">
+            <label for="team_id" class="form-label">Team</label>
+            <select class="form-select" id="team_id" name="team_id" onchange="this.form.submit()">
+              <option value="">-- Choose a team --</option>
+              {% for t in teams %}
+                <option value="{{ t.id }}"
+                        {% if selected_team and t.id == selected_team.id %}selected{% endif %}>
+                  {{ t.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <noscript>
+            <button type="submit" class="btn btn-primary btn-sm">View</button>
+          </noscript>
+        </form>
+
+        {% if team_record and selected_team %}
+          <hr>
+          <p class="mb-1 text-muted small">Overall Games Record</p>
+          <div class="h5">
+            <span class="badge bg-secondary">
+              {{ team_record.games_won }} – {{ team_record.games_lost }}
+            </span>
+          </div>
+          <p class="text-muted small mb-1">
+            Games played:
+            <strong>{{ team_record.games_played }}</strong>
+          </p>
+          <p class="text-muted small mb-0">
+            Win %:
+            <strong>{{ (team_record.win_pct * 100) | round(1) }}%</strong>
+          </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Team schedule/results -->
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        {% if selected_team %}
+          <div>
+            <strong>{{ selected_team.name }}</strong>
+            <span class="text-muted ms-2 small">Schedule &amp; Results</span>
+          </div>
+        {% else %}
+          <div>
+            <strong>Team Schedule</strong>
+            <span class="text-muted ms-2 small">Select a team to view its games</span>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="card-body p-0">
+
+        {% if selected_team and selected_matches %}
+          {# ===== Desktop / Tablet: table view ===== #}
+          <div class="d-none d-md-block">
+            <div class="table-responsive">
+              <table class="table table-striped mb-0 align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th scope="col">Week</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Time</th>
+                    <th scope="col">Court</th>
+                    <th scope="col">Opponent</th>
+                    <th scope="col" class="text-center">Home/Away</th>
+                    <th scope="col" class="text-center">Series (Games)</th>
+                    <th scope="col" class="text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for m in selected_matches %}
+                    {% set is_home = (m.home_team_id == selected_team.id) %}
+                    {% set opponent = m.away_team if is_home else m.home_team %}
+                    <tr>
+                      <td>{{ m.week }}</td>
+                      <td>{{ m.match_date or "" }}</td>
+                      <td>{{ m.match_time or "-" }}</td>
+                      <td>{{ m.court or "-" }}</td>
+                      <td class="fw-semibold">{{ opponent.name }}</td>
+                      <td class="text-center">
+                        <span class="badge bg-light text-dark">
+                          {{ "Home" if is_home else "Away" }}
+                        </span>
+                      </td>
+                      <td class="text-center">
+                        {% if m.home_score is not none and m.away_score is not none %}
+                          {{ m.home_score }} – {{ m.away_score }}
+                        {% else %}
+                          <span class="badge bg-secondary">TBD</span>
+                        {% endif %}
+                      </td>
+                      <td class="text-center">
+                        <a href="{{ url_for('edit_match', match_id=m.id) }}"
+                           class="btn btn-sm btn-outline-primary">
+                          Edit
+                        </a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {# ===== Mobile: stacked “row-card” layout ===== #}
+          <div class="d-md-none">
+            {% for m in selected_matches %}
+              {% set is_home = (m.home_team_id == selected_team.id) %}
+              {% set opponent = m.away_team if is_home else m.home_team %}
+              {% set has_score = (m.home_score is not none and m.away_score is not none) %}
+
+              <div class="border-bottom px-3 py-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <div>
+                    <span class="badge bg-dark me-2">Week {{ m.week }}</span>
+                    <small class="text-muted">
+                      {{ m.match_date or "" }}{% if m.match_time %} · {{ m.match_time }}{% endif %}
+                    </small>
+                  </div>
+                  <div class="text-end">
+                    {% if has_score %}
+                      <div>
+                        <span class="badge bg-primary">
+                          {{ m.home_score }} – {{ m.away_score }}
+                        </span>
+                      </div>
+                    {% else %}
+                      <div>
+                        <span class="badge bg-secondary">TBD</span>
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="fw-semibold">{{ opponent.name }}</div>
+                    <div class="text-muted small">
+                      Opponent ·
+                      <span class="text-uppercase">
+                        {{ "Home" if is_home else "Away" }}
+                      </span>
+                    </div>
+                    {% if m.court %}
+                      <div class="text-muted small">
+                        Court: <strong>{{ m.court }}</strong>
+                      </div>
+                    {% endif %}
+                  </div>
+                  <div class="text-end">
+                    <a href="{{ url_for('edit_match', match_id=m.id) }}"
+                       class="btn btn-sm btn-outline-primary">
+                      Edit
+                    </a>
+                  </div>
+                </div>
+              </div>
             {% endfor %}
-          {% else %}
-            <tr>
-              <td colspan="6" class="text-center py-4 text-muted">
-                No teams yet. Use <strong>Add Match</strong> to enter your first series.
+          </div>
+
+        {% elif selected_team %}
+          <div class="p-3 text-muted text-center">
+            No games scheduled yet for {{ selected_team.name }}.
+          </div>
+        {% else %}
+          <div class="p-3 text-muted text-center">
+            Select a team on the left to view its schedule and overall record.
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

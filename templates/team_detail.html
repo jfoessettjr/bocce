@@ -19,7 +19,7 @@
     </div>
 
     <a href="{{ url_for('standings') }}" class="btn btn-outline-secondary btn-sm">
-      ← Back to Standings
+      ← Back to Team Schedule
     </a>
   </div>
 </div>
@@ -28,10 +28,9 @@
   <div class="card-header">
     <strong>Schedule & Results</strong>
   </div>
-
   <div class="card-body p-0">
 
-    {# ===== Desktop / Tablet view: full table (md and up) ===== #}
+    {# ===== Desktop / Tablet view: full table ===== #}
     <div class="d-none d-md-block">
       <div class="table-responsive">
         <table class="table table-striped mb-0 align-middle">
@@ -45,9 +44,11 @@
               <th scope="col" class="text-center">Home/Away</th>
               <th scope="col" class="text-center">Result</th>
               <th scope="col" class="text-center">Series (Games)</th>
+              <th scope="col" class="text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
+
             {% if matches %}
               {% for m in matches %}
                 {% set is_home = (m.home_team_id == team.id) %}
@@ -106,21 +107,29 @@
                       —
                     {% endif %}
                   </td>
+
+                  <td class="text-center">
+                    <a href="{{ url_for('edit_match', match_id=m.id) }}"
+                       class="btn btn-sm btn-outline-primary">
+                      Edit
+                    </a>
+                  </td>
                 </tr>
               {% endfor %}
             {% else %}
               <tr>
-                <td colspan="8" class="text-center py-4 text-muted">
+                <td colspan="9" class="text-center py-4 text-muted">
                   No games scheduled for this team yet.
                 </td>
               </tr>
             {% endif %}
+
           </tbody>
         </table>
       </div>
     </div>
 
-    {# ===== Mobile view: stacked cards (sm and down) ===== #}
+    {# ===== Mobile view: stacked cards ===== #}
     <div class="d-md-none">
       {% if matches %}
         {% for m in matches %}
@@ -156,21 +165,25 @@
                   {{ m.match_date or "" }}{% if m.match_time %} · {{ m.match_time }}{% endif %}
                 </small>
               </div>
-              <div>
+              <div class="text-end">
                 {% if has_score %}
-                  <span class="badge {{ result_class }} me-1">
-                    {{ result_label }}
-                  </span>
-                  <span class="badge bg-primary">
-                    {{ m.home_score }} – {{ m.away_score }}
-                  </span>
+                  <div class="mb-1">
+                    <span class="badge {{ result_class }}" title="{{ result_text }}">
+                      {{ result_label }}
+                    </span>
+                  </div>
+                  <div>
+                    <span class="badge bg-primary">
+                      {{ m.home_score }} – {{ m.away_score }}
+                    </span>
+                  </div>
                 {% else %}
                   <span class="badge bg-secondary">TBD</span>
                 {% endif %}
               </div>
             </div>
 
-            <div class="d-flex justify-content-between">
+            <div class="d-flex justify-content-between align-items-center">
               <div>
                 <div class="fw-semibold">{{ opponent.name }}</div>
                 <div class="text-muted small">
@@ -179,14 +192,21 @@
                     {{ "Home" if is_home else "Away" }}
                   </span>
                 </div>
-              </div>
-              <div class="text-end text-muted small">
                 {% if m.court %}
-                  <div>Court: <strong>{{ m.court }}</strong></div>
+                  <div class="text-muted small">
+                    Court: <strong>{{ m.court }}</strong>
+                  </div>
                 {% endif %}
+              </div>
+              <div class="text-end">
+                <a href="{{ url_for('edit_match', match_id=m.id) }}"
+                   class="btn btn-sm btn-outline-primary">
+                  Edit
+                </a>
               </div>
             </div>
           </div>
+
         {% endfor %}
       {% else %}
         <div class="p-3 text-center text-muted">

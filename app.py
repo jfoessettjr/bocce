@@ -1,7 +1,7 @@
 import os
 from datetime import date
 
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, abort
 from sqlalchemy import (
     create_engine,
     Column,
@@ -378,6 +378,64 @@ def add_match():
         # GET: show form
         teams = session.query(Team).order_by(Team.name.asc()).all()
         return render_template("add_match.html", teams=teams)
+    finally:
+        session.close()
+
+@app.route("/match/<int:match_id>/edit", methods=["GET", "POST"])
+def edit_match(match_id):
+    session = SessionLocal()
+    try:
+        # Look up the match
+        match = (
+            session.query(Match)
+            .filter(Match.id == match_id)
+            .one_or_none()
+        )
+        if match is None:
+            abort(404)
+
+        if request.method == "POST":
+            # Update from form
+            week = int(request.form["week"])
+            match_date_str = request.form["match_date"]  # 'YYYY-MM-DD'
+            match_time = request.form["match_time"]
+            court = request.form["court"]
+            home_team_name = request.form["home_team"]
+            away_team_name = request.form["away_team"]
+
+            home_score_raw = request.form.get("home_score")
+            away_score_raw = request.form.get("away_score")
+
+            home_score = int(home_score_raw) if home_score_raw else None
+            away_score = int(away_score_raw) if away_score_raw else None
+
+            # Convert date string to date object
+            year, month, day = map(int, match_date_str.split("-"))
+            match_date = date(year, month, day)
+
+            # Ensure teams exist or create them
+            home_team = get_or_create_team(session, home_team_name)
+            away_team = get_or_create_team(session, away_team_name)
+
+            # Apply updates
+            match.week = week
+            match.match_date = match_date
+            match.match_time = match_time
+            match.court = court
+            match.home_team_id = home_team.id
+            match.away_team_id = away_team.id
+            match.home_score = home_score
+            match.away_score = away_score
+
+            session.commit()
+
+            # After saving, send them back to standings (or you could redirect to week_matches)
+            return redirect(url_for("standings"))
+
+        # GET: show form with existing values
+        teams = session.query(Team).order_by(Team.name.asc()).all()
+        return render_template("edit_match.html", match=match, teams=teams)
+
     finally:
         session.close()
 
